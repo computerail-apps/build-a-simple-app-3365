@@ -3,17 +3,17 @@ export function formatUsd(value: number | null | undefined, opts: { compact?: bo
   if (opts.compact) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'usd'.toUpperCase(),
+      currency: 'usd',
       notation: 'compact',
       maximumFractionDigits: 2,
     }).format(value);
   }
-  const decimals = value < 1 ? 6 : value < 100 ? 4 : 2;
+  const digits = value >= 1 ? 2 : value >= 0.01 ? 4 : 8;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: decimals,
+    currency: 'usd',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   }).format(value);
 }
 
@@ -28,8 +28,7 @@ export function formatPercent(value: number | null | undefined): string {
   return `${sign}${value.toFixed(2)}%`;
 }
 
-export function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(d);
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(iso));
 }
