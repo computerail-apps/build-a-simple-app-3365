@@ -1,24 +1,34 @@
-import { Line, LineChart, ResponsiveContainer } from 'recharts';
-import { cn } from '@/lib/cn';
-
 interface SparklineProps {
-  data: number[] | undefined;
+  data: number[];
   positive: boolean;
-  className?: string;
+  width?: number;
+  height?: number;
 }
 
-export function Sparkline({ data, positive, className }: SparklineProps) {
+export function Sparkline({ data, positive, width = 120, height = 36 }: SparklineProps) {
   if (!data || data.length < 2) {
-    return <div className={cn('h-8 w-24 rounded bg-muted', className)} />;
+    return <div style={{ width, height }} className="rounded bg-muted/40" />;
   }
-  const points = data.map((v, i) => ({ i, v }));
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const step = width / (data.length - 1);
+  const points = data.map((v, i) => {
+    const x = i * step;
+    const y = height - ((v - min) / range) * height;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  const stroke = positive ? 'var(--color-success, #22c55e)' : 'var(--color-destructive, #ef4444)';
   return (
-    <div className={cn('h-8 w-24', positive ? 'text-success' : 'text-destructive', className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={points} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
-          <Line type="monotone" dataKey="v" stroke="currentColor" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline
+        points={points.join(' ')}
+        fill="none"
+        stroke={positive ? '#34d399' : '#f87171'}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

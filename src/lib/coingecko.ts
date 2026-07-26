@@ -1,4 +1,4 @@
-const BASE_URL = 'https://api.coingecko.com/api/v3';
+const BASE = 'https://api.coingecko.com/api/v3';
 
 export interface MarketCoin {
   id: string;
@@ -13,11 +13,11 @@ export interface MarketCoin {
   sparkline_in_7d?: { price: number[] };
 }
 
-export interface CoinDetailData {
+export interface CoinDetail {
   id: string;
   symbol: string;
   name: string;
-  image: { large: string; small: string };
+  image: { small: string; large: string };
   market_data: {
     current_price: { usd: number };
     market_cap: { usd: number };
@@ -25,47 +25,39 @@ export interface CoinDetailData {
     circulating_supply: number;
     total_supply: number | null;
     max_supply: number | null;
-    price_change_percentage_24h: number;
     ath: { usd: number };
-    ath_change_percentage: { usd: number };
     ath_date: { usd: string };
+    ath_change_percentage: { usd: number };
+    price_change_percentage_24h: number;
   };
 }
 
-export interface MarketChartData {
+export interface MarketChart {
   prices: [number, number][];
 }
 
-async function handle<T>(res: Response): Promise<T> {
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url);
   if (!res.ok) {
-    let detail = '';
-    try {
-      detail = await res.text();
-    } catch {
-      detail = '';
-    }
     if (res.status === 429) {
       throw new Error('CoinGecko rate limit reached. Please wait a moment and retry.');
     }
-    throw new Error(`CoinGecko request failed (${res.status}): ${detail || res.statusText}`);
+    throw new Error(`CoinGecko request failed (${res.status})`);
   }
   return res.json() as Promise<T>;
 }
 
-export async function fetchTopCoins(perPage = 50): Promise<MarketCoin[]> {
-  const url = `${BASE_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=true&price_change_percentage=24h`;
-  const res = await fetch(url);
-  return handle<MarketCoin[]>(res);
+export async function getMarkets(): Promise<MarketCoin[]> {
+  const url = `${BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=24h`;
+  return fetchJson<MarketCoin[]>(url);
 }
 
-export async function fetchCoinDetail(id: string): Promise<CoinDetailData> {
-  const url = `${BASE_URL}/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`;
-  const res = await fetch(url);
-  return handle<CoinDetailData>(res);
+export async function getCoin(id: string): Promise<CoinDetail> {
+  const url = `${BASE}/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`;
+  return fetchJson<CoinDetail>(url);
 }
 
-export async function fetchCoinMarketChart(id: string, days = 7): Promise<MarketChartData> {
-  const url = `${BASE_URL}/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
-  const res = await fetch(url);
-  return handle<MarketChartData>(res);
+export async function getMarketChart(id: string, days = 7): Promise<MarketChart> {
+  const url = `${BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`;
+  return fetchJson<MarketChart>(url);
 }
